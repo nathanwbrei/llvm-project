@@ -15,7 +15,7 @@ using namespace llvm;
 
 PreservedAnalyses MemLayoutPass::run(Function &F, FunctionAnalysisManager &AM) {
 
-    errs() << "=======================================================" << F.getName() << "\n";
+    errs() << "=======================================================\n";
     errs() << "cs642_memlayout_experiment: " << F.getName() << ": Entering pass\n";
 
     if (F.hasFnAttribute(Attribute::ReadNone)) {
@@ -24,7 +24,7 @@ PreservedAnalyses MemLayoutPass::run(Function &F, FunctionAnalysisManager &AM) {
     }
 
     errs() << "cs642_memlayout_experiment: " << F.getName() << ": Exiting pass\n";
-    errs() << "=======================================================" << F.getName() << "\n";
+    errs() << "=======================================================\n";
 
     // Not sure which analyses are still good after this, so we are conservative and invalidate all of them
     return PreservedAnalyses::none();
@@ -36,16 +36,18 @@ PreservedAnalyses MemLayoutPass::run(Function &F, FunctionAnalysisManager &AM) {
 llvm::PassPluginLibraryInfo getMemLayoutPassPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "MemLayoutPass", LLVM_VERSION_STRING,
             [](PassBuilder &PB) {
+        /*
         PB.registerVectorizerStartEPCallback(
             [](llvm::FunctionPassManager &PM, OptimizationLevel Level) {
                 PM.addPass(MemLayoutPass());
             });
+        */
         // TODO: We probably DO want to run this pass right before the vectorizer, but let's
         // hold off until we understand more about how the new pass manager works
         PB.registerPipelineParsingCallback(
             [](StringRef Name, llvm::FunctionPassManager &PM,
                 ArrayRef<llvm::PassBuilder::PipelineElement>) {
-                if (Name == "goodbye") {
+                if (Name == "memlayout") {
                     PM.addPass(MemLayoutPass());
                     return true;
                 }
