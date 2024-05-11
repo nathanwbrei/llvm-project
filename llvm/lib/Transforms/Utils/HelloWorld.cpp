@@ -12,6 +12,6 @@ using namespace llvm;
 
 PreservedAnalyses HelloWorldPass::run(Function &F,
                                       FunctionAnalysisManager &AM) {
-  errs() << F.getName() << "\n";
+  errs() << "cs642_memlayout_experiment: Entering function: " << F.getName() << "\n";
   return PreservedAnalyses::all();
 }
