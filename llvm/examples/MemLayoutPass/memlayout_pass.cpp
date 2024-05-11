@@ -40,6 +40,8 @@ llvm::PassPluginLibraryInfo getMemLayoutPassPluginInfo() {
             [](llvm::FunctionPassManager &PM, OptimizationLevel Level) {
                 PM.addPass(MemLayoutPass());
             });
+        // TODO: We probably DO want to run this pass right before the vectorizer, but let's
+        // hold off until we understand more about how the new pass manager works
         PB.registerPipelineParsingCallback(
             [](StringRef Name, llvm::FunctionPassManager &PM,
                 ArrayRef<llvm::PassBuilder::PipelineElement>) {
