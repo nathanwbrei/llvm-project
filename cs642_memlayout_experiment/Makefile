@@ -2,7 +2,7 @@ CLANG_BUILD_DIR = ../build
 CLANG = ${CLANG_BUILD_DIR}/bin/clang
 OPT = ${CLANG_BUILD_DIR}/bin/opt
 
-.PHONY: clang tests_all tests_cpp tests_ir
+.PHONY: clang tests_all tests_cpp tests_ir tests_cpp_memoryssa tests_ir_memoryssa
 
 clang:
 	echo "Building clang"
@@ -26,4 +26,10 @@ tests_ir:
 
 	echo "Generating post-pass IR for IR tests"
 	${OPT} -passes=helloworld -S -o memlayout_tests_ir_post.ll memlayout_tests_ir.ll
+
+tests_ir_memoryssa:
+
+	echo "Generating MemorySSA output for IR tests"
+	${OPT} -passes='print<memoryssa>',helloworld,'print<memoryssa>' -S -o memlayout_tests_ir_post.ll memlayout_tests_ir.ll
+
 

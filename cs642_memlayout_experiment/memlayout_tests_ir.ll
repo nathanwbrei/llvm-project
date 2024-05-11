@@ -1,10 +1,13 @@
 
+;; foo(x) = x + g
+
+@g = global i32 22, align 4
 
 define i32 @foo() {
-	%a = add i32 2, 3
-	ret i32 %a
+    ; Adds a global to a constant and returns
+    %a = load i32, ptr @g, align 4
+    %b = add i32 %a, 3
+    ret i32 %b
 }
 
-define void @bar() {
-	ret void
-}
+
