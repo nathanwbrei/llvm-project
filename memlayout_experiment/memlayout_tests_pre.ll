@@ -4,8 +4,11 @@ target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-i128:128-f80:
 target triple = "x86_64-unknown-linux-gnu"
 
 @g = dso_local local_unnamed_addr global i32 22, align 4
+@.str = private unnamed_addr constant [11 x i8] c"f(1) == 23\00", align 1
+@.str.1 = private unnamed_addr constant [20 x i8] c"memlayout_tests.cpp\00", align 1
+@__PRETTY_FUNCTION__.main = private unnamed_addr constant [11 x i8] c"int main()\00", align 1
 
-; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(read, argmem: none, inaccessiblemem: none) uwtable
+; Function Attrs: mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, argmem: none, inaccessiblemem: none) uwtable
 define dso_local noundef i32 @_Z1fi(i32 noundef %x) local_unnamed_addr #0 {
 entry:
   %0 = load i32, ptr @g, align 4, !tbaa !5
@@ -13,15 +16,28 @@ entry:
   ret i32 %add
 }
 
-; Function Attrs: mustprogress nofree norecurse nosync nounwind willreturn memory(read, argmem: none, inaccessiblemem: none) uwtable
-define dso_local noundef i32 @main() local_unnamed_addr #0 {
+; Function Attrs: mustprogress norecurse nounwind uwtable
+define dso_local noundef i32 @main() local_unnamed_addr #1 {
 entry:
-  %0 = load i32, ptr @g, align 4, !tbaa !5
-  %add.i = add nsw i32 %0, 1
-  ret i32 %add.i
+  %call = tail call noundef i32 @_Z1fi(i32 noundef 1)
+  %cmp = icmp eq i32 %call, 23
+  br i1 %cmp, label %cond.end, label %cond.false
+
+cond.false:                                       ; preds = %entry
+  tail call void @__assert_fail(ptr noundef nonnull @.str, ptr noundef nonnull @.str.1, i32 noundef 18, ptr noundef nonnull @__PRETTY_FUNCTION__.main) #3
+  unreachable
+
+cond.end:                                         ; preds = %entry
+  ret i32 0
 }
 
-attributes #0 = { mustprogress nofree norecurse nosync nounwind willreturn memory(read, argmem: none, inaccessiblemem: none) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+; Function Attrs: noreturn nounwind
+declare void @__assert_fail(ptr noundef, ptr noundef, i32 noundef, ptr noundef) local_unnamed_addr #2
+
+attributes #0 = { mustprogress nofree noinline norecurse nosync nounwind willreturn memory(read, argmem: none, inaccessiblemem: none) uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { mustprogress norecurse nounwind uwtable "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { noreturn nounwind "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cmov,+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { noreturn nounwind }
 
 !llvm.module.flags = !{!0, !1, !2, !3}
 !llvm.ident = !{!4}

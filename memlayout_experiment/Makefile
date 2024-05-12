@@ -32,7 +32,8 @@ tests_cpp:
 
 	# Generating post-pass IR for C++ tests
 	${OPT} -load-pass-plugin ${CLANG_BUILD_DIR}/lib/MemLayoutPass.so \
-		   -passes='function(print<memoryssa>)',memlayout,'function(print<memoryssa>)' \
+		   -passes=memlayout \
+		   -memlayout-target _Z1fi \
 		   -S -o memlayout_tests_post.ll memlayout_tests_pre.ll
 
 	# Compiling C++ tests

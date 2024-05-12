@@ -1,5 +1,9 @@
 
 
+#include <cassert>
+
+#define NOINLINE __attribute__((noinline))
+
 struct MyStruct {
   int field_a = 22;
   double field_b;
@@ -7,5 +11,10 @@ struct MyStruct {
 };
 
 int g = 22;
-int f(int x) { return x + g; }
-int main() { return f(1); }
+NOINLINE int f(int x) { return x + g; }
+
+int main() { 
+
+    assert(f(1) == 23);
+
+}

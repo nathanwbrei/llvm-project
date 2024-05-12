@@ -6,9 +6,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/IRBuilder.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 
 
 using namespace llvm;
@@ -21,24 +25,65 @@ static cl::opt<std::string> TargetFunction(
 
 struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
 
+    void wrapFunction(Function& Outer, Function& Inner) {
+        Inner.setName(Outer.getName() + "_inner");
+        Outer.deleteBody(); // Sets linkage to external
+                            // TODO: It may be better to just clone the FunctionType, etc
+                            // There's just so many things attached to Function that I don't understand yet
+        Outer.setLinkage(Inner.getLinkage());
+
+        // Forces the compiler to keep the inner function around, which may come in handy 
+        // later... or may interfere with vectorization... we'll see
+        Inner.setLinkage(GlobalValue::LinkageTypes::ExternalLinkage);
+        
+        BasicBlock *BB = BasicBlock::Create(Outer.getContext(), "entry", &Outer);
+        IRBuilder<> Builder(BB);
+    
+        // For now we just forward the args from Outer straight to Inner
+        std::vector<llvm::Value*> InnerArgs;
+        for (llvm::Argument& Arg : Outer.args()) {
+            InnerArgs.push_back(&Arg);
+            // Maybe I want to clone these?
+        }
+        llvm::CallInst *Call = Builder.CreateCall(&Inner, InnerArgs);
+
+        // Return result argument
+        Builder.CreateRet(Call);
+    }
+
+
     PreservedAnalyses run(Module &M, ModuleAnalysisManager &MM) {
 
         errs() << "=======================================================\n";
         errs() << "memlayout: " << M.getName() << ": Entering pass\n";
 
+        std::vector<Function*> Targets;
         for (Function& F : M) {
+            // Skip if the function is already annotated as "readnone"
             if (F.hasFnAttribute(Attribute::ReadNone)) {
                 errs() << "memlayout: " << F.getName() << ": Early exit: readnone\n";
                 continue;
             }
 
+            // Skip if we specified a different target function via command line
             if (!TargetFunction.getValue().empty() && F.getName() != TargetFunction.getValue()) {
                 errs() << "memlayout: " << F.getName() 
                         << ": Early exit: Doesn't match target function '" << TargetFunction.getValue() << "'\n";
                 continue;
             }
 
-            errs() << "memlayout: " << F.getName() << ": Performing pass!\n";
+            Targets.push_back(&F);
+        }
+
+        for (Function* F : Targets) {
+            // Actually do the work
+            errs() << "memlayout: " << F->getName() << ": Wrapping function\n";
+            //Function inner(F.getFunctionType(), F.getLinkage(), F.getAddrSpace());
+
+            ValueToValueMapTy ValueMap;
+            ClonedCodeInfo Info;
+            Function* Inner = CloneFunction(F, ValueMap, &Info);
+            wrapFunction(*F, *Inner);
         }
 
         errs() << "memlayout: " << M.getName() << ": Exiting pass\n";
