@@ -6,6 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Analysis/MemorySSA.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/IRBuilder.h"
@@ -21,6 +22,8 @@ static cl::opt<std::string> TargetFunction(
         "memlayout-target", 
         cl::init(""), 
         cl::desc("Function to target for memory layout rejiggery (defaults to all!)"));
+
+
 
 
 struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
@@ -52,6 +55,7 @@ struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
     }
 
 
+
     PreservedAnalyses run(Module &M, ModuleAnalysisManager &MM) {
 
         errs() << "=======================================================\n";
@@ -59,6 +63,7 @@ struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
 
         std::vector<Function*> Targets;
         for (Function& F : M) {
+
             // Skip if the function is already annotated as "readnone"
             if (F.hasFnAttribute(Attribute::ReadNone)) {
                 errs() << "memlayout: " << F.getName() << ": Early exit: readnone\n";
@@ -75,10 +80,26 @@ struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
             Targets.push_back(&F);
         }
 
+        if (Targets.empty())  {
+            errs() << "memlayout: " << M.getName() << ": Early exit: No targets found in module\n";
+            return PreservedAnalyses::all();
+        }
+
+
+        // Now we know we have actual work to do! 
+        // We will want to fetch the MemorySSA analysis, which is tricky because MemorySSA is a function pass, not a module pass
+        // So we have to use a proxy
+        FunctionAnalysisManager &FM = MM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+        assert(not FM.empty());
+
+
         for (Function* F : Targets) {
             // Actually do the work
             errs() << "memlayout: " << F->getName() << ": Wrapping function\n";
             //Function inner(F.getFunctionType(), F.getLinkage(), F.getAddrSpace());
+
+            // Obtain MemorySSA analysis for this function
+            MemorySSAAnalysis::Result& MemoryResult = FM.getResult<MemorySSAAnalysis>(*F);
 
             ValueToValueMapTy ValueMap;
             ClonedCodeInfo Info;
