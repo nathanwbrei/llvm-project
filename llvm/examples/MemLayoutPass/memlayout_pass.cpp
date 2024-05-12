@@ -20,22 +20,28 @@ static cl::opt<std::string> TargetFunction(
 
 
 struct MemLayoutPass : public PassInfoMixin<MemLayoutPass> {
-    PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM) {
-        if (F.hasFnAttribute(Attribute::ReadNone)) {
-            errs() << "memlayout_experiment: " << F.getName() << ": Early exit: readnone\n";
-            return PreservedAnalyses::all();
-        }
 
-        if (!TargetFunction.getValue().empty() && F.getName() != TargetFunction.getValue()) {
-            errs() << "memlayout_experiment: " << F.getName() 
-                    << ": Early exit: Doesn't match target function '" << TargetFunction.getValue() << "'\n";
-            return PreservedAnalyses::all();
-        }
+    PreservedAnalyses run(Module &M, ModuleAnalysisManager &MM) {
 
         errs() << "=======================================================\n";
-        errs() << "memlayout_experiment: " << F.getName() << ": Entering pass\n";
+        errs() << "memlayout: " << M.getName() << ": Entering pass\n";
 
-        errs() << "memlayout_experiment: " << F.getName() << ": Exiting pass\n";
+        for (Function& F : M) {
+            if (F.hasFnAttribute(Attribute::ReadNone)) {
+                errs() << "memlayout: " << F.getName() << ": Early exit: readnone\n";
+                continue;
+            }
+
+            if (!TargetFunction.getValue().empty() && F.getName() != TargetFunction.getValue()) {
+                errs() << "memlayout: " << F.getName() 
+                        << ": Early exit: Doesn't match target function '" << TargetFunction.getValue() << "'\n";
+                continue;
+            }
+
+            errs() << "memlayout: " << F.getName() << ": Performing pass!\n";
+        }
+
+        errs() << "memlayout: " << M.getName() << ": Exiting pass\n";
         errs() << "=======================================================\n";
 
         // Not sure which analyses are still good after this, so we are conservative and invalidate all of them
@@ -58,7 +64,7 @@ llvm::PassPluginLibraryInfo getMemLayoutPassPluginInfo() {
         // TODO: We probably DO want to run this pass right before the vectorizer, but let's
         // hold off until we understand more about how the new pass manager works
         PB.registerPipelineParsingCallback(
-            [](StringRef Name, llvm::FunctionPassManager &PM,
+            [](StringRef Name, llvm::ModulePassManager &PM,
                 ArrayRef<llvm::PassBuilder::PipelineElement>) {
                 if (Name == "memlayout") {
                     PM.addPass(MemLayoutPass());

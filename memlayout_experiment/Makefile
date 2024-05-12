@@ -31,7 +31,9 @@ tests_cpp:
 	${CLANG} memlayout_tests.cpp -O3 -S -emit-llvm -o memlayout_tests_pre.ll
 
 	# Generating post-pass IR for C++ tests
-	${OPT} -load-pass-plugin ${CLANG_BUILD_DIR}/lib/MemLayoutPass.so -passes='print<memoryssa>',memlayout,'print<memoryssa>' -S -o memlayout_tests_post.ll memlayout_tests_pre.ll
+	${OPT} -load-pass-plugin ${CLANG_BUILD_DIR}/lib/MemLayoutPass.so \
+		   -passes='function(print<memoryssa>)',memlayout,'function(print<memoryssa>)' \
+		   -S -o memlayout_tests_post.ll memlayout_tests_pre.ll
 
 	# Compiling C++ tests
 	${CLANG} memlayout_tests_post.ll -o memlayout_tests.out
@@ -40,6 +42,7 @@ tests_cpp:
 tests_ir:
 
 	# Generating post-pass IR for IR tests
-	${OPT} -load-pass-plugin ${CLANG_BUILD_DIR}/lib/MemLayoutPass.so -passes='print<memoryssa>',memlayout,'print<memoryssa>' -S -o memlayout_tests_ir_post.ll memlayout_tests_ir.ll
+	${OPT} -load-pass-plugin ${CLANG_BUILD_DIR}/lib/MemLayoutPass.so \
+		-passes='function(print<memoryssa>)',memlayout,'function(print<memoryssa>)' -S -o memlayout_tests_ir_post.ll memlayout_tests_ir.ll
 
 
