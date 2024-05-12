@@ -8,22 +8,36 @@
 
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/CommandLine.h"
 
 #include "memlayout_pass.h"
 
 using namespace llvm;
 
+static cl::opt<std::string> TargetFunction(
+        "memlayout-target", 
+        cl::init(""), 
+        cl::desc("Function to target for memory layout rejiggery (defaults to all!)"));
+
+
 PreservedAnalyses MemLayoutPass::run(Function &F, FunctionAnalysisManager &AM) {
 
-    errs() << "=======================================================\n";
-    errs() << "cs642_memlayout_experiment: " << F.getName() << ": Entering pass\n";
 
     if (F.hasFnAttribute(Attribute::ReadNone)) {
-        errs() << "cs642_memlayout_experiment: " << F.getName() << ": Early exit: readnone\n";
+        errs() << "memlayout_experiment: " << F.getName() << ": Early exit: readnone\n";
         return PreservedAnalyses::all();
     }
 
-    errs() << "cs642_memlayout_experiment: " << F.getName() << ": Exiting pass\n";
+    if (!TargetFunction.getValue().empty() && F.getName() != TargetFunction.getValue()) {
+        errs() << "memlayout_experiment: " << F.getName() 
+               << ": Early exit: Doesn't match target function '" << TargetFunction.getValue() << "'\n";
+        return PreservedAnalyses::all();
+    }
+
+    errs() << "=======================================================\n";
+    errs() << "memlayout_experiment: " << F.getName() << ": Entering pass\n";
+
+    errs() << "memlayout_experiment: " << F.getName() << ": Exiting pass\n";
     errs() << "=======================================================\n";
 
     // Not sure which analyses are still good after this, so we are conservative and invalidate all of them
